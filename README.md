@@ -1,6 +1,6 @@
 
 
-#  CodeQL Automation Tool (Secure & Structured) / Combining Vim + CodeQL
+#  CodeQL Automation Tool for Golang (Secure & Structured) / Combining Vim + CodeQL
 
 > Automate your CodeQL queries with confidence. This tool provides a **secure**, **flexible**, and **production-ready** way to run CodeQL queries, output SARIF reports, and decode BQRS results with minimal setup.
 
