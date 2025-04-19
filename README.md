@@ -22,7 +22,7 @@
 #### 1. Clone this repo
 
 ```bash
-git clone https://github.com/yourusername/codeql-secure-automation.git
+git clone https://github.com/madedis/CodeQL-Automation-Tool.git
 cd codeql-secure-automation
 ```
 
