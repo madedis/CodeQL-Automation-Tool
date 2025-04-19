@@ -48,20 +48,20 @@ query_pack="my-query-go"
 ###  Usage
 
 ```bash
-chmod +x run-codeql.sh
-./run-codeql.sh -c qlconf.cfg
+chmod +x main.sh
+sudo ./main .sh -c qlconf.cfg
 ```
 
 Or use the default config (`./qlconf.cfg`):
 
 ```bash
-./run-codeql.sh
+./main.sh
 ```
 
 ####  Help menu
 
 ```bash
-./run-codeql.sh -h
+./main.sh -h
 ```
 
 ---
@@ -89,8 +89,8 @@ These outputs can be used in CI pipelines, GitHub Advanced Security (GHAS), or f
 Want to run multiple configurations? Just pass different `.cfg` files:
 
 ```bash
-./run-codeql.sh -c test1.cfg
-./run-codeql.sh -c test2.cfg
+./main.sh -c test1.cfg
+./main.sh -c test2.cfg
 ```
 
 ### 🤝 Contributions
