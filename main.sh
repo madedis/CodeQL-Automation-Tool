@@ -1,175 +1,214 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
-# ─────────────────────────────────────────────────────────────────────────────
-# sriptfor Dealing with the CodeQl setup will be created later .
-############################################################################################################################################################
-#
-# First thing :
-#    
-#  arti_d_c  var directory where stored : artifact database creation,
-#   
-#  base_dir  var directory where stored : the created query, qlpack.yml, result-of-the-query-executed.sarif
-#  
-#  N.B : make sure the pack.yml is and object containing "name":"value" , value here is the the directorty name where the mentionned files are stored.
-#  
-#  state_res var directory where stored : the results folder mentionned in the database analyze :  of the query in the databases directory.
-# 
-# saving all commands cli : codeql database creation and database analyze . 
-# parsinng all args supplied : the directory where the first arg and second arg are containing all necessary ressources, to run codeql cli  command cases.  
-# 
-# Here we gonna automate the process of : 
-# Creating a go databases using codeql database create  and  a cloned git repo and CodeQl cli Command codeql data for the codebase we need to analyze.
-# Analysis off a go dabatase using codeql database analyze cli command and using the database created and a stored in an directory.
-# 
-# Processing the artifact of the database analyze : we choose to use CodeQl and Vim instead of Vscode which needs some automation for smothly using Codeql.
-#
-# ─────────────────────────────────────────────────────────────────────────────
-#
-# 1 locate the bqrs file. 
-# 2 prepare for decoding file.
-# 3 decode the bqrs file.    
-# 
-# ─────────────────────────────────────────────────────────────────────────────
-# CodeQL Automation Tool (Structured & Secure)
-#   - Uses associative arrays for configuration
-#   - Enhanced command-line interface
-#   - Improved validation and error handling
-# ─────────────────────────────────────────────────────────────────────────────
+# =================================================================
+# Dynamic CodeQL Analyzer - Unified Installation, Setup, and Analysis
+# =================================================================
+# Version: 2.0
+# Author: madedis 
+# Description: Handles first-time users, existing setups, and CLI-style operations
+# =================================================================
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# ----------------------------------
+# Configuration (Customizable)
+# ----------------------------------
+INSTALL_DIR="/opt/static_recon_codeql/workspace"  # Core installation directory
+CLI_URL="https://github.com/github/codeql-cli-binaries/releases/latest/download/codeql-linux64.zip"
+REPO_URL="https://github.com/github/codeql.git"
+WORK_DIR="${WORK_DIR:-$(pwd)}"  # Default working directory
 
-# Initialize configuration associative array
-declare -A CONFIG
+# ----------------------------------
+# Color Codes & Logging
+# ----------------------------------
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 
-# Default configuration file path
-CONFIG_FILE="./qlconf.cfg"
+log() {
+  local timestamp
+  timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+  echo -e "${BLUE}[${timestamp}]${NC} $1" | tee -a "$WORK_DIR/codeql_auto.log"
+}
 
-# ────────────── Function Definitions ──────────────
 show_help() {
-  echo -e "${YELLOW}Usage:${NC}"
-  echo "  $0 [OPTIONS]"
-  echo
-  echo -e "${YELLOW}Options:${NC}"
-  echo "  -c, --config FILE    Specify configuration file (default: ./qlconf.cfg)"
-  echo "  -h, --help           Show this help message"
-  echo
-  echo -e "${YELLOW}Description:${NC}"
-  echo "  Automated CodeQL analysis workflow with SARIF output and BQRS decoding"
+  echo "Usage: $0 [--work-dir DIR] [--install-dir DIR] [--project-name NAME] COMMAND"
+  echo "Commands: install, setup, create-db, analyze, full"
 }
 
-load_config() {
-  local config_file="$1"
-  if [[ ! -f "$config_file" ]]; then
-    echo -e "${RED} Config file not found: $config_file${NC}"
-    exit 1
+# ----------------------------------
+# Core Functions
+# ----------------------------------
+
+install() {
+  log "${GREEN}🚀 Initializing CodeQL Environment Setup...${NC}"
+  
+  if ! command -v unzip &>/dev/null || ! command -v git &>/dev/null; then
+    log "${YELLOW}⚠ Installing System Dependencies...${NC}"
+    sudo apt update && sudo apt install -y unzip git wget golang || { 
+      log "${RED}⨯ Dependency Installation Failed"; exit 1 
+    }
   fi
-  
-  # Source configuration file
-  source "$config_file"
-  
-  # Populate associative array from sourced variables
-  CONFIG=(
-    [arti_d_c]="$arti_d_c"
-    [base_dir]="$base_dir"
-    [state_res]="$state_res"
-    [filesarif]="$filesarif"
-    [query_file_name]="$query_file_name"
-    [codeql_cli]="$codeql_cli"
-    [database_dir]="$database_dir"
-    [additional_packs]="$additional_packs"
-    [query_pack]="$query_pack"
-  )
+
+  CLI_DIR="$INSTALL_DIR/codeql-cli"
+  if [[ ! -f "$CLI_DIR/codeql" ]]; then
+    log "${YELLOW}⏳ Downloading CodeQL CLI...${NC}"
+    wget -qO /tmp/codeql.zip "$CLI_URL" || { log "${RED}⨯ CLI Download Failed"; exit 1; }
+
+    log "${YELLOW}⏳ Extracting CLI...${NC}"
+    mkdir -p "$CLI_DIR"
+    unzip -q /tmp/codeql.zip -d "$CLI_DIR" || { log "${RED}⨯ Extraction Failed"; exit 1; }
+    rm -f /tmp/codeql.zip
+  fi
+
+  REPO_DIR="$INSTALL_DIR/codeql-repo"
+  [[ ! -d "$REPO_DIR" ]] && {
+    log "${YELLOW}⏳ Cloning Standard Packs...${NC}"
+    git clone --depth 1 "$REPO_URL" "$REPO_DIR" || { log "${RED}⨯ Clone Failed"; exit 1; }
+  }
+
+  log "${GREEN}✅ Environment Setup Completed${NC}"
 }
 
-validate_config() {
-  declare -A REQUIRED_KEYS=(
-    [arti_d_c]="Artifact directory configuration"
-    [base_dir]="Base working directory"
-    [state_res]="State/results directory"
-    [filesarif]="SARIF output filename base"
-    [query_file_name]="Query file name base"
-    [codeql_cli]="CodeQL CLI executable path"
-    [database_dir]="CodeQL database directory"
-    [additional_packs]="Additional CodeQL packs"
-    [query_pack]="Query pack specification"
+setup_project() {
+  log "${GREEN}📂 Configuring Project Structure...${NC}"
+  #
+  PROJECT_PATH="$INSTALL_DIR/$PROJECT_NAME"
+  declare -gA FOLDERS=(
+    [artifacts]="$PROJECT_PATH/artifacts"
+    [database]="$PROJECT_PATH/go-database"
+    [results]="$PROJECT_PATH/go-database/results"
+    [queries]="$INSTALL_DIR/${PROJECT_NAME}-queries"
   )
 
-  local missing=0
-  for key in "${!REQUIRED_KEYS[@]}"; do
-    if [[ -z "${CONFIG[$key]:-}" ]]; then
-      echo -e "${RED} Missing required configuration: ${REQUIRED_KEYS[$key]} ($key)${NC}"
-      missing=1
+  for path in "${FOLDERS[@]}"; do
+    if [[ ! -d "$path" ]]; then
+      mkdir -p "$path" || { log "${RED}⨯ Failed creating $path"; continue; }
+      log "${GREEN}✔ Created: ${path/$INSTALL_DIR\//}"
+    else
+      log "${YELLOW}✔ Exists: ${path/$INSTALL_DIR\//}"
     fi
   done
+}
 
-  if [[ $missing -ne 0 ]]; then
-    exit 1
+create_db() {
+  local SRC_DIR="$1"
+  log "${GREEN}📦 Building Database from: $SRC_DIR${NC}"
+  
+  DB_DIR="go-database"
+  
+  if [[ -d "$DB_DIR" && ! -f "$DB_DIR/qlpack.yml" ]]; then
+    log "${YELLOW}⚠ Removing Corrupted Database...${NC}"
+    rm -rf "$DB_DIR"
+  fi
+
+  CODEQL_BIN="$(find "$INSTALL_DIR/codeql-cli" -name codeql -type f | head -n1)"
+  [[ -z "$CODEQL_BIN" ]] && { log "${RED}⨯ CodeQL CLI Missing"; exit 1; }
+
+  log "${YELLOW}⏳ Creating Database...${NC}"
+  "$CODEQL_BIN" database create "$DB_DIR" \
+    --language=go \
+    --source-root="$SRC_DIR"  || {
+      log "${RED}⨯ Database Creation Failed"
+      exit 1
+    }
+
+  log "${GREEN}✅ Database Created: ${DB_DIR/$INSTALL_DIR\//}${NC}"
+}
+
+analyze() {
+  log "${GREEN}🔍 Starting Analysis Pipeline...${NC}"
+  
+  local QUERIES_DIR="" SRC_DIR="" FORMAT="sarifv2.1.0" AUTO_CREATE=true
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --queries-dir) QUERIES_DIR="$2"; shift 2 ;;
+      --src-dir) SRC_DIR="$2"; shift 2 ;;
+      --format) FORMAT="$2"; shift 2 ;;
+      --no-create) AUTO_CREATE=false; shift ;;
+      *) log "${RED}⨯ Unknown Option: $1"; exit 1 ;;
+    esac
+  done
+
+  [[ -z "$QUERIES_DIR" ]] && { log "${RED}⨯ --queries-dir Required"; exit 1; }
+  [[ "$AUTO_CREATE" == true && -z "$SRC_DIR" ]] && { log "${RED}⨯ --src-dir Required"; exit 1; }
+
+  if [[ "$AUTO_CREATE" == true ]]; then
+    [[ ! -d "$SRC_DIR" ]] && { log "${RED}⨯ Source Directory Missing"; exit 1; }
+    create_db "$SRC_DIR"
+  fi
+
+  CODEQL_BIN="$(find "$INSTALL_DIR/codeql-cli" -name codeql -type f | head -n1)"
+  OUTPUT_FILE="$WORK_DIR/${PROJECT_NAME}.${FORMAT//[^a-zA-Z0-9]/_}"
+  
+  log "${YELLOW}⏳ Running $FORMAT Analysis...${NC}"
+  "$CODEQL_BIN" database analyze \
+    --additional-packs "$INSTALL_DIR/codeql-repo" \
+    --format="$FORMAT" \
+    --output="$OUTPUT_FILE" \
+    "$PWD/go-database" \
+    "$QUERIES_DIR" || {
+      log "${RED}⨯ Analysis Failed"; exit 1
+    }
+
+  log "${GREEN}✅ Analysis Output: ${OUTPUT_FILE/$WORK_DIR\//}${NC}"
+
+  BQRS_FILE="$(find "$PWD/go-database/results" -name '*.bqrs' -print -quit)"
+  if [[ -f "$BQRS_FILE" ]]; then
+    TXT_OUT="${BQRS_FILE%.bqrs}.txt"
+    log "${YELLOW}⏳ Decoding BQRS Results...${NC}"
+    "$CODEQL_BIN" bqrs decode \
+      --format=text \
+      --output="$TXT_OUT" \
+      "$BQRS_FILE" || {
+        log "${RED}⨯ Decoding Failed"; exit 1
+      }
+    log "${GREEN}✅ Decoded Results: ${TXT_OUT/$WORK_DIR\//}${NC}"
+  else
+    log "${YELLOW}⚠ No BQRS Files Found for Decoding${NC}"
   fi
 }
 
-# ────────────── Main Execution ──────────────
+# ----------------------------------
+# Main Execution Flow
+# ----------------------------------
+PROJECT_NAME="$(basename "$PWD")"
+COMMAND=""
 
-# Parse command-line arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -c|--config)
-      CONFIG_FILE="$2"
-      shift 2
-      ;;
-    -h|--help)
-      show_help
-      exit 0
-      ;;
-    *)
-      echo -e "${RED} Unknown option: $1${NC}"
-      show_help
-      exit 1
-      ;;
+    --work-dir) WORK_DIR="$2"; shift 2 ;;
+    --install-dir) INSTALL_DIR="$2"; shift 2 ;;
+    --project-name) PROJECT_NAME="$2"; shift 2 ;;
+    install|setup|create-db|analyze|full) COMMAND="$1"; shift; break ;;
+    -h|--help) show_help; exit 0 ;;
+    *) log "${RED}⨯ Invalid Option: $1"; show_help; exit 1 ;;
   esac
 done
 
-# Load and validate configuration
-load_config "$CONFIG_FILE"
-validate_config
+[[ -z "${COMMAND:-}" ]] && { log "${RED}⨯ No Command Specified"; show_help; exit 1; }
 
-# ────────────── Path Calculations ──────────────
-bqrs_file="${CONFIG[query_file_name]}.bqrs"
-text_report="${CONFIG[query_file_name]}.txt"
-bqrs_path="${CONFIG[state_res]}/$bqrs_file"
-txt_output_path="${CONFIG[state_res]}/$text_report"
-sarif_output="${CONFIG[base_dir]}/${CONFIG[filesarif]}.sarif"
+case "$COMMAND" in
+  install)
+    install "$@"
+    ;;
+  setup)
+    setup_project "$@"
+    ;;
+  create-db)
+    [[ -z "${1:-}" ]] && { log "${RED}⨯ Missing --src-dir"; exit 1; }
+    create_db "$1"
+    ;;
+  analyze)
+    analyze "$@"
+    ;;
+  full)
+    install
+    setup_project
+    [[ -z "${1:-}" || -z "${2:-}" ]] && { log "${RED}⨯ Missing --src-dir or --queries-dir"; exit 1; }
+    create_db "$1"
+    analyze --queries-dir "$2"
+    ;;
+  *)
+    log "${RED}⨯ Invalid Command"; show_help; exit 1
+    ;;
+esac
 
-# Create output directory if needed
-mkdir -p "${CONFIG[state_res]}"
-
-# ────────────── Analysis Stage ──────────────
-echo -e "${GREEN}🔍 Starting CodeQL analysis...${NC}"
-"${CONFIG[codeql_cli]}" database analyze \
-  --additional-packs "${CONFIG[additional_packs]}" \
-  "${CONFIG[database_dir]}" \
-  "${CONFIG[query_pack]}" \
-  --format=sarifv2.1.0 \
-  --output="$sarif_output"
-
-# ────────────── Results Processing ──────────────
-if [[ ! -f "$bqrs_path" ]]; then
-  echo -e "${RED} BQRS file not found at: $bqrs_path${NC}"
-  exit 1
-fi
-
-echo -e "${GREEN} Converting BQRS results to readable format...${NC}"
-"${CONFIG[codeql_cli]}" bqrs decode \
-  --format=text \
-  --output="$txt_output_path" \
-  -- "$bqrs_path"
-
-# ────────────── Final Output ──────────────
-echo -e "\n${GREEN} Analysis complete!${NC}"
-echo -e "${YELLOW}► SARIF Report:${NC} $sarif_output"
-echo -e "${YELLOW}► Text Report: ${NC} $txt_output_path"
+log "${GREEN}✅ Successfully Completed: $COMMAND${NC}"
