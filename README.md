@@ -64,12 +64,15 @@ chmod +x main.sh
 | `create-db` | Builds DB from source dir |
 | `analyze` | Runs queries → outputs SARIF/text |
 | `full` | Install+create+analyze in one go |
+| `--help` | Usage |
 
 ## Usage
 ```bash
 sudo ./main.sh [OPTIONS] COMMAND [PARAMETERS]
 ```
-
+```bash
+sudo ./main.sh --help
+```
 ### Options
 - `--work-dir DIR`: Set working directory (default: current)
 - `--install-dir DIR`: Set installation root (default: /opt/static_recon_codeql/workspace)
