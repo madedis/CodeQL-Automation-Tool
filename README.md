@@ -4,6 +4,32 @@ A Bash tool to install the CodeQL CLI, pull in the official packs, build your Go
 
 ---
 
+
+☑️ Fighting CodeQL extensions in VS Code.  
+☑️ Wasting hours configuring analysis for each project.  
+☑️ Being limited to GUI tools when you live in tmux/vim/neovim.  
+
+## 🗺️ Project Info
+
+### Current Features (v2.0)
+- **Zero-IDE Setup**  
+  `./codeql_analyzer.sh install` handles all dependencies  
+  *(For those who are not VS Code friendly)*  
+
+- **Terminal-First Workflow**  
+  Works with vim/emacs/nano + tmux/screen  
+  *(Cloud/server-friendly for SSH workflows)*  
+### Planned (v2.1)
+- **Multi-Language Support** :  *All Compiled languages (Java/C++ - when CodeQL's analysis works reliably in CLI mode)*
+  
+  `--language=javascript|cpp|java|python` flags  
+ 
+###  **Real Problems This Solves**  
+1. **Cloud servers with no GUI?** No problem - runs headless  
+2. **Need quick scans during CI/CD?** Drops results in your pipeline  
+3. **Hate IDE bloat?** Your favorite terminal editor works fine  
+---
+
 # What It Does
 - Automated CodeQL CLI and pack installation
 - Project structure scaffolding
@@ -25,6 +51,19 @@ git clone https://github.com/madedis/CodeQL-Automation-Tool.git
 cd codeql-analyzer
 chmod +x main.sh
 ```
+## When This Helps
+- Working on **headless servers/cloud instances**
+- Needing **quick scans without IDE configuration**
+- Running **repeatable analyses** across environments
+
+## Core Commands
+
+| Command | What It Does | 
+|---------|--------------|
+| `install` | Gets CodeQL CLI + queries | 
+| `create-db` | Builds DB from source dir |
+| `analyze` | Runs queries → outputs SARIF/text |
+| `full` | Install+create+analyze in one go |
 
 ## Usage
 ```bash
@@ -99,3 +138,17 @@ sudo ./main.sh [OPTIONS] COMMAND [PARAMETERS]
 - **Missing Dependencies**: Ensure `apt` access and internet connection
 - **Database Errors**: Delete corrupted `go-database` folder and retry
 - **Permission Issues**: Run with `sudo` for system-wide installation
+
+
+## Disclaimer 
+
+This is a time-saver - not a security silver bullet.  
+
+Test outputs before relying on critical systems.  
+
+*Contributions welcome for bug fixes and QoL improvements.*  
+
+
+
+
+
