@@ -72,7 +72,7 @@ setup_project() {
   #
   PROJECT_PATH="$INSTALL_DIR/$PROJECT_NAME"
   declare -gA FOLDERS=(
-    [artifacts]="$PROJECT_PATH/artifacts"
+    #[artifacts]="$PROJECT_PATH/artifacts"
     [database]="$PROJECT_PATH/go-database"
     [results]="$PROJECT_PATH/go-database/results"
     [queries]="$INSTALL_DIR/${PROJECT_NAME}-queries"
