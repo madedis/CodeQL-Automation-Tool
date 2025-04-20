@@ -1,101 +1,107 @@
+# CodeQL Go Automation Suite : install setup and start analyzing golang source code
 
-
-#  CodeQL Automation Tool for Golang (Secure & Structured) / Combining Vim + CodeQL
-
-> Automate your CodeQL queries with confidence. This tool provides a **secure**, **flexible**, and **production-ready** way to run CodeQL queries, output SARIF reports, and decode BQRS results with minimal setup.
+A Bash tool to install the CodeQL CLI, pull in the official packs, scaffold your Go project workspace, build a CodeQL database, run custom queries, and decode results. No bs—just repeatable steps and clear outputs.
 
 ---
 
-###  Features
+## Why Use This Script?
 
--  Supports `.bqrs` decoding and `.sarif` generation
--  Fully configurable with an external `.cfg` file
--  Validates inputs and paths before execution
--  Uses associative arrays for clean logic
--  Color-coded output for clarity
--  Easily extensible for additional formats or stages
+Maintaining a secure Go codebase means running CodeQL scans regularly. This single script gives you:
+
+- **One-command install** of CodeQL CLI and official packs  
+- **Dynamic workspace setup** for any project name  
+- **Automated database creation** from your Go code  
+- **Query execution** with SARIF output  
+- **BQRS decoding** into human‑readable text  
+- **Modular commands** so you can pick and choose  
 
 ---
 
-### 🛠️ Setup
+## Prerequisites
 
-#### 1. Clone this repo
+- **Linux** (Debian‑family, Ubuntu, Parrot, etc.)  
+- **Bash** (version 4+)  
+- **sudo** privileges  
+- **Internet** access for downloads  
+- **Go toolchain** installed (required for database build)  
+
+---
+
+## Installation
+
+1. Clone this repo (or copy `main.sh`) into your workspace:
+   ```bash
+   git clone https://github.com/madedis/CodeQL-Automation-Tool.git
+   cd CodeQL-Automation-Tool
+   ```
+2. Make the script executable:
+   ```bash
+   chmod +x main.sh
+   ```
+
+---
+
+## Usage
 
 ```bash
-git clone https://github.com/madedis/CodeQL-Automation-Tool.git
-cd codeql-secure-automation
+./main.sh [GLOBAL OPTIONS] <command> [COMMAND OPTIONS]
 ```
 
-#### 2. Create and configure your `.cfg` file
+### Global Options
 
-Example `qlconf.cfg`:
+- `--work-dir DIR`       	# Directory for logs and outputs (default: current directory)
+- `--install-dir DIR`    	# Where to install CodeQL CLI and packs (default: `/opt/static_recon_codeql/workspace`)
+- `--cli-url URL`        	# URL to download CodeQL CLI zip
+- `--repo-url URL`       	# Git URL for CodeQL packs (default: GitHub official repo)
+- `--project-name NAME`  	# Identifier for your project (default: name of CWD)
 
-```bash
-arti_d_c="/opt/static_recon_codeql/workspace/nebula/artifacts"
-base_dir="/opt/static_recon_codeql/workspace/nebula/my-query-go"
-state_res="/opt/static_recon_codeql/workspace/nebula/go-database/results/my-go-query"
-filesarif="nebula_res"
-query_file_name="firstquery"
+### Commands
 
-codeql_cli="/opt/static_recon_codeql/workspace/codeql-cli/codeql"
-database_dir="/opt/static_recon_codeql/workspace/nebula/go-database"
-additional_packs="/root/.codeql/packages"
-query_pack="my-query-go"
-```
+| Command   | Description                                                                                                  |
+|-----------|--------------------------------------------------------------------------------------------------------------|
+| `install` | Install CodeQL CLI and clone the official packs repository.                                                  |
+| `setup`   | Create project folder structure under the install directory.                                                  |
+| `create-db` | Build and create a Go CodeQL database from source.                                                          |
+| `analyze` | Run CodeQL queries against the database and decode results to text/SARIF.                                     |
+| `full`    | Execute `install`, `setup`, `create-db`, and `analyze` in one go (requires `--src-dir` and `--queries-dir`). |
+
+Run `./main.sh <command> --help` for command-specific options.
 
 ---
 
-###  Usage
+## Examples
 
-```bash
-chmod +x main.sh
-sudo ./main .sh -c qlconf.cfg
-```
+1. **Install CodeQL CLI & packs**
+   ```bash
+   ./main.sh --install-dir ~/codeql_workspace install
+   ```
 
-Or use the default config (`./qlconf.cfg`):
+2. **Setup a project**
+   ```bash
+   ./main.sh setup --project-name my-go-app
+   ```
 
-```bash
-./main.sh
-```
+3. **Create a database from source**
+   ```bash
+   ./main.sh create-db --src-dir /path/to/my-go-app
+   ```
 
-####  Help menu
+4. **Analyze with custom queries**
+   ```bash
+   ./main.sh analyze --queries-dir ~/custom-ql-packs --format sarifv2.1.0
+   ```
 
-```bash
-./main.sh -h
-```
-
----
-
-### 📂 Output Files
-
-- ✅ SARIF Report: `${base_dir}/${filesarif}.sarif`
-- ✅ Text Report: `${state_res}/${query_file_name}.txt`
-
-These outputs can be used in CI pipelines, GitHub Advanced Security (GHAS), or for local inspection.
-
----
-
-### 🔒 Security Notes
-
-- All configuration values are **strictly validated**.
-- No unescaped shell execution is used.
-- Ideal for multi-user environments and CI/CD pipelines.
-- No risk of privilege escalation or arbitrary code execution via `eval`.
+5. **Full run**
+   ```bash
+   ./main.sh full --src-dir ./ --queries-dir ./queries
+   ```
 
 ---
 
-### 🧪 Testing Configurations
+## Logging
 
-Want to run multiple configurations? Just pass different `.cfg` files:
+All script actions are logged to `<WORK_DIR>/codeql_auto.log` with timestamps. Inspect this file if something goes sideways.
 
-```bash
-./main.sh -c test1.cfg
-./main.sh -c test2.cfg
-```
 
-### 🤝 Contributions
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
-
----
 
