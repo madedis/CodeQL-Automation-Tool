@@ -64,6 +64,7 @@ chmod +x main.sh
 | `create-db` | Builds DB from source dir |
 | `analyze` | Runs queries → outputs SARIF/text |
 | `full` | Install+create+analyze in one go |
+| `--no-create` | Skips creating database if it's already created|
 | `--help` | Usage |
 
 ## Usage
@@ -77,6 +78,7 @@ sudo ./main.sh --help
 - `--work-dir DIR`: Set working directory (default: current)
 - `--install-dir DIR`: Set installation root (default: /opt/static_recon_codeql/workspace)
 - `--project-name NAME`: Set project name (default: current directory name)
+- `--no-create ` : skip creating database if it's already created.
 
 ### Commands
 1. **Install Dependencies**
@@ -97,6 +99,10 @@ sudo ./main.sh --help
 4. **Run Analysis**
    ```bash
    sudo ./main.sh analyze --queries-dir /path/to/queries --src-dir /path/to/source
+   ```
+    **Run Analysis without the creation of a database again**
+      ```bash
+   sudo ./main.sh analyze --queries-dir /path/to/queries --src-dir /path/to/source --no-create
    ```
 
 5. **Full Pipeline**
